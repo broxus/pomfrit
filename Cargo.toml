@@ -1,0 +1,19 @@
+[package]
+name = "pomfrit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+futures = "0.3"
+hyper = { version = "0.14", features = ["server", "tcp"] }
+log = "0.4"
+num-traits = "0.2"
+parking_lot = "0.11"
+serde = { version = "1", features = ["derive"], optional = true }
+tokio = { version = "1", features = ["macros", "sync", "time", "rt"] }
+
+[features]
+default = ["serde", "http1"]
+http1 = ["hyper/http1"]
+http2 = ["hyper/http2"]
