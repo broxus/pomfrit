@@ -1,7 +1,12 @@
 [package]
 name = "pomfrit"
+description = "Prometheus metrics exporter with hot reload"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/broxus/pomfrit"
+keywords = ["metrics", "prometheus"]
+include = ["src/**/*.rs", "README.md", "LICENSE"]
+license-file = "./LICENSE"
 
 [dependencies]
 anyhow = "1.0"

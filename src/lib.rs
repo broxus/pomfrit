@@ -1,56 +1,59 @@
-/// # Simple Prometheus metrics exporter with hot reload
-///
-/// Example:
-/// ```rust
-/// use pomfrit::formatter::*;
-///
-/// /// Your metrics as a struct
-/// struct MyMetrics<'a> {
-///     ctx: &'a str,
-///     some_diff: u32,
-///     some_time: u32,
-/// }
-///
-/// /// Describe how your metrics will be displayed
-/// impl std::fmt::Display for MyMetrics<'_> {
-///     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-///         f.begin_metric("some_diff")
-///             .label("label1", self.ctx)
-///             .label("label2", "some value")
-///             .value(self.some_diff)?;
-///
-///         f.begin_metric("some_time")
-///             .label("label1", self.ctx)
-///             .value(self.some_time)
-///     }
-/// }
-///
-/// async fn my_app() {
-///     // Create inactive exporter
-///     let (exporter, writer) = pomfrit::create_exporter(None).await.unwrap();
-///
-///     // Spawn task which will run in background and write metrics
-///     writer.spawn(|buf| {
-///         buf.write(MyMetrics {
-///             ctx: "asd",
-///             some_diff: 123,
-///             some_time: 456,
-///         }).write(MyMetrics {
-///             ctx: "qwe",
-///             some_diff: 111,
-///             some_time: 444,
-///         });
-///     });
-///
-///     // ...
-///
-///     // Reload exporter config
-///     exporter.reload(Some(pomfrit::Config {
-///         collection_interval_sec: 10,
-///         ..Default::default()
-///     })).await.unwrap();
-/// }
-/// ```
+//! # Simple Prometheus metrics exporter with hot reload
+//!
+//! Example:
+//! ```rust
+//! use pomfrit::formatter::*;
+//!
+//! /// Your metrics as a struct
+//! struct MyMetrics<'a> {
+//!     ctx: &'a str,
+//!     some_diff: u32,
+//!     some_time: u32,
+//! }
+//!
+//! /// Describe how your metrics will be displayed
+//! impl std::fmt::Display for MyMetrics<'_> {
+//!     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//!         f.begin_metric("some_diff")
+//!             .label("label1", self.ctx)
+//!             .label("label2", "some value")
+//!             .value(self.some_diff)?;
+//!
+//!         f.begin_metric("some_time")
+//!             .label("label1", self.ctx)
+//!             .value(self.some_time)
+//!     }
+//! }
+//!
+//! async fn my_app() {
+//!     // Create inactive exporter
+//!     let (exporter, writer) = pomfrit::create_exporter(None).await.unwrap();
+//!
+//!     // Spawn task which will run in background and write metrics
+//!     writer.spawn(|buf| {
+//!         buf.write(MyMetrics {
+//!             ctx: "asd",
+//!             some_diff: 123,
+//!             some_time: 456,
+//!         }).write(MyMetrics {
+//!             ctx: "qwe",
+//!             some_diff: 111,
+//!             some_time: 444,
+//!         });
+//!     });
+//!
+//!     // ...
+//!
+//!     // Reload exporter config
+//!     exporter.reload(Some(pomfrit::Config {
+//!         collection_interval_sec: 10,
+//!         ..Default::default()
+//!     })).await.unwrap();
+//! }
+//! ```
+
+////////////////////////////////////////////////////////////////////////////////
+
 use std::convert::Infallible;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -67,6 +70,7 @@ mod config;
 pub mod formatter;
 mod utils;
 
+/// Creates exporter service and metrics writer
 pub async fn create_exporter(
     config: Option<Config>,
 ) -> Result<(Arc<MetricsExporter>, MetricsWriter)> {
@@ -89,35 +93,6 @@ pub async fn create_exporter(
     Ok((exporter, MetricsWriter { handle }))
 }
 
-/// Prometheus metrics writer
-pub struct MetricsWriter {
-    /// Shared exporter state
-    handle: Arc<MetricsExporterHandle>,
-}
-
-impl MetricsWriter {
-    pub fn spawn<F>(self, mut f: F)
-    where
-        for<'a> F: FnMut(&mut MetricsBuffer<'a>) + Send + 'static,
-    {
-        let handle = Arc::downgrade(&self.handle);
-
-        tokio::spawn(async move {
-            loop {
-                let handle = match handle.upgrade() {
-                    Some(handle) => {
-                        f(&mut handle.buffers().acquire_buffer().await);
-                        handle
-                    }
-                    None => return,
-                };
-
-                handle.wait().await;
-            }
-        });
-    }
-}
-
 /// Prometheus metrics exporter
 pub struct MetricsExporter {
     /// Shared exporter state
@@ -131,6 +106,7 @@ pub struct MetricsExporter {
 }
 
 impl MetricsExporter {
+    /// Updates exporter config is some, disables service otherwise
     pub async fn reload(&self, config: Option<Config>) -> Result<()> {
         let mut running_endpoint = self.running_endpoint.lock().await;
 
@@ -233,6 +209,35 @@ impl Drop for MetricsExporter {
     fn drop(&mut self) {
         // Trigger server shutdown on drop
         self.completion_trigger.trigger();
+    }
+}
+
+/// Prometheus metrics writer
+pub struct MetricsWriter {
+    /// Shared exporter state
+    handle: Arc<MetricsExporterHandle>,
+}
+
+impl MetricsWriter {
+    pub fn spawn<F>(self, mut f: F)
+    where
+        for<'a> F: FnMut(&mut MetricsBuffer<'a>) + Send + 'static,
+    {
+        let handle = Arc::downgrade(&self.handle);
+
+        tokio::spawn(async move {
+            loop {
+                let handle = match handle.upgrade() {
+                    Some(handle) => {
+                        f(&mut handle.buffers().acquire_buffer().await);
+                        handle
+                    }
+                    None => return,
+                };
+
+                handle.wait().await;
+            }
+        });
     }
 }
 
