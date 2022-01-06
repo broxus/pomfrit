@@ -54,7 +54,7 @@ impl<'a, 'b> PrometheusFormatter<'a, 'b> {
     }
 
     #[inline]
-    pub fn value<T>(self, value: T) -> std::fmt::Result
+    pub fn value<T>(self, value: impl std::borrow::Borrow<T>) -> std::fmt::Result
     where
         T: num_traits::Num + std::fmt::Display,
     {
@@ -64,7 +64,7 @@ impl<'a, 'b> PrometheusFormatter<'a, 'b> {
             } else {
                 self.fmt.write_char(' ')?;
             }
-            value.fmt(self.fmt)?;
+            value.borrow().fmt(self.fmt)?;
             self.fmt.write_char('\n')
         })
     }
