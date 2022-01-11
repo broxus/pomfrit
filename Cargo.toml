@@ -9,16 +9,18 @@ include = ["src/**/*.rs", "README.md", "LICENSE"]
 license-file = "./LICENSE"
 
 [dependencies]
-anyhow = "1.0"
-futures = "0.3"
-hyper = { version = "0.14", features = ["server", "tcp"] }
-log = "0.4"
 num-traits = "0.2"
-parking_lot = "0.11"
+
+anyhow = { version = "1.0", optional = true }
+futures = { version = "0.3", optional = true }
+hyper = { version = "0.14", features = ["server", "tcp"], optional = true }
+log = { version = "0.4", optional = true }
+parking_lot = { version = "0.11", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
-tokio = { version = "1", features = ["macros", "sync", "time", "rt"] }
+tokio = { version = "1", features = ["macros", "sync", "time", "rt"], optional = true }
 
 [features]
 default = ["serde", "http1"]
-http1 = ["hyper/http1"]
-http2 = ["hyper/http2"]
+exporter = ["anyhow", "futures", "hyper", "log", "parking_lot", "tokio"]
+http1 = ["exporter", "hyper/http1"]
+http2 = ["exporter", "hyper/http2"]
