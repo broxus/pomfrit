@@ -27,6 +27,19 @@ impl<'a, 'b> PrometheusFormatter<'a, 'b> {
     }
 
     #[inline]
+    pub fn label_opt<N, V>(self, name: N, value: Option<V>) -> Self
+    where
+        N: std::fmt::Display,
+        V: std::fmt::Display,
+    {
+        if let Some(value) = value {
+            self.label(name, value)
+        } else {
+            self
+        }
+    }
+
+    #[inline]
     pub fn label<N, V>(self, name: N, value: V) -> Self
     where
         N: std::fmt::Display,
