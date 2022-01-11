@@ -82,4 +82,15 @@ impl<'a, 'b> PrometheusFormatter<'a, 'b> {
             self.fmt.write_char('\n')
         })
     }
+
+    #[inline]
+    pub fn empty(self) -> std::fmt::Result {
+        self.result.and_then(|_| {
+            if self.has_labels {
+                self.fmt.write_str("}\n")
+            } else {
+                self.fmt.write_char('\n')
+            }
+        })
+    }
 }
