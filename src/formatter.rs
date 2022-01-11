@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::fmt::Write;
 
 pub trait DisplayPrometheusExt<'b> {
@@ -27,12 +28,12 @@ impl<'a, 'b> PrometheusFormatter<'a, 'b> {
     }
 
     #[inline]
-    pub fn label_opt<N, V>(self, name: N, value: Option<V>) -> Self
+    pub fn label_opt<N, V>(self, name: N, value: impl Borrow<Option<V>>) -> Self
     where
         N: std::fmt::Display,
         V: std::fmt::Display,
     {
-        if let Some(value) = value {
+        if let Some(value) = value.borrow() {
             self.label(name, value)
         } else {
             self
