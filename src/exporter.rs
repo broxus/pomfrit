@@ -46,7 +46,7 @@ pub struct MetricsExporter {
 }
 
 impl MetricsExporter {
-    /// Updates exporter config is some, disables service otherwise
+    /// Updates exporter config if some, disables service otherwise
     pub async fn reload(&self, config: Option<Config>) -> Result<()> {
         let mut running_endpoint = self.running_endpoint.lock().await;
 

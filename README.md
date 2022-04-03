@@ -53,3 +53,7 @@ async fn my_app() {
     })).await.unwrap();
 }
 ```
+
+### Why is it called `pomfrit`?
+
+Pomfrit is fried potatoes. Something very simple and you order it in addition to the main course.

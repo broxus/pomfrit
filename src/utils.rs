@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{hash_map, HashMap};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -71,7 +71,17 @@ impl Future for TriggerReceiver {
         if self.state.complete.load(Ordering::Acquire) {
             Poll::Ready(())
         } else {
-            wakers.insert(self.id, cx.waker().clone());
+            match wakers.entry(self.id) {
+                hash_map::Entry::Occupied(mut entry) => {
+                    if !cx.waker().will_wake(entry.get()) {
+                        entry.insert(cx.waker().clone());
+                    }
+                }
+                hash_map::Entry::Vacant(entry) => {
+                    entry.insert(cx.waker().clone());
+                }
+            };
+
             Poll::Pending
         }
     }
@@ -109,5 +119,55 @@ pub mod serde_url {
             Some(_) => format!("/{}", data),
         };
         PathAndQuery::from_str(&data).map_err(D::Error::custom)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use futures_test::task::new_count_waker;
+
+    use super::*;
+
+    #[test]
+    fn correct_trigger_behaviour() {
+        let (waker, wake_counter) = new_count_waker();
+
+        let (trigger, receiver) = trigger();
+        let mut receiver = receiver.clone();
+
+        assert!(Pin::new(&mut receiver)
+            .poll(&mut Context::from_waker(&waker))
+            .is_pending());
+        assert_eq!(wake_counter.get(), 0);
+
+        trigger.trigger();
+        assert!(Pin::new(&mut receiver)
+            .poll(&mut Context::from_waker(&waker))
+            .is_ready());
+        assert_eq!(wake_counter.get(), 1);
+    }
+
+    #[test]
+    fn correct_trigger_behaviour_with_multiple_wakes() {
+        let (waker, wake_counter) = new_count_waker();
+
+        let (trigger, receiver) = trigger();
+        let mut receiver = receiver.clone();
+
+        assert!(Pin::new(&mut receiver)
+            .poll(&mut Context::from_waker(&waker))
+            .is_pending());
+        assert_eq!(wake_counter.get(), 0);
+
+        assert!(Pin::new(&mut receiver)
+            .poll(&mut Context::from_waker(&waker))
+            .is_pending());
+        assert_eq!(wake_counter.get(), 0);
+
+        trigger.trigger();
+        assert!(Pin::new(&mut receiver)
+            .poll(&mut Context::from_waker(&waker))
+            .is_ready());
+        assert_eq!(wake_counter.get(), 1);
     }
 }
