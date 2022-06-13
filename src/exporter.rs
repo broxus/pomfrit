@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
-use futures::future::Either;
+use futures_util::future::Either;
 use tokio::sync::{Mutex, Notify, RwLock, RwLockWriteGuard};
 
 use crate::config::*;
@@ -83,7 +83,7 @@ impl MetricsExporter {
                 Ok::<_, Infallible>(hyper::service::service_fn(move |req| {
                     // Allow only GET metrics_path
                     if req.method() != hyper::Method::GET || req.uri() != path.as_str() {
-                        return Either::Left(futures::future::ready(
+                        return Either::Left(futures_util::future::ready(
                             hyper::Response::builder()
                                 .status(hyper::StatusCode::NOT_FOUND)
                                 .body(hyper::Body::empty()),
@@ -115,7 +115,7 @@ impl MetricsExporter {
             let server = server
                 .serve(make_service)
                 .with_graceful_shutdown(async move {
-                    futures::future::select(completion_signal, local_completion_signal).await;
+                    futures_util::future::select(completion_signal, local_completion_signal).await;
                 });
 
             if let Err(e) = server.await {

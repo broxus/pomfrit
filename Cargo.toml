@@ -1,7 +1,7 @@
 [package]
 name = "pomfrit"
 description = "Prometheus metrics exporter with hot reload"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 repository = "https://github.com/broxus/pomfrit"
 keywords = ["metrics", "prometheus"]
@@ -12,7 +12,7 @@ license-file = "./LICENSE"
 num-traits = "0.2"
 
 anyhow = { version = "1.0", optional = true }
-futures = { version = "0.3", optional = true }
+futures-util = { version = "0.3", optional = true }
 hyper = { version = "0.14", features = ["server", "tcp"], optional = true }
 log = { version = "0.4", optional = true }
 parking_lot = { version = "0.12", optional = true }
@@ -24,6 +24,6 @@ futures-test = "0.3"
 
 [features]
 default = ["serde", "http1"]
-exporter = ["anyhow", "futures", "hyper", "log", "parking_lot", "tokio"]
+exporter = ["anyhow", "futures-util", "hyper", "log", "parking_lot", "tokio"]
 http1 = ["exporter", "hyper/http1"]
 http2 = ["exporter", "hyper/http2"]
