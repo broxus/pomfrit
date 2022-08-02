@@ -94,31 +94,41 @@ struct State {
 }
 
 #[cfg(feature = "serde")]
-pub mod serde_url {
+pub mod serde_optional_url {
     use std::str::FromStr;
 
     use hyper::http::uri::PathAndQuery;
     use serde::de::Error;
     use serde::Deserialize;
 
-    pub fn serialize<S>(data: &PathAndQuery, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(data: &Option<PathAndQuery>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(data.as_str())
+        match data {
+            Some(data) => serializer.serialize_some(data.as_str()),
+            None => serializer.serialize_none(),
+        }
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<PathAndQuery, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<PathAndQuery>, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        let data = String::deserialize(deserializer)?;
-        let data = match data.as_bytes().first() {
-            None => "/".to_owned(),
-            Some(b'/') => data,
-            Some(_) => format!("/{}", data),
-        };
-        PathAndQuery::from_str(&data).map_err(D::Error::custom)
+        let data = Option::<String>::deserialize(deserializer)?;
+        match data {
+            Some(data) => {
+                let data = match data.as_bytes().first() {
+                    None => "/".to_owned(),
+                    Some(b'/') => data,
+                    Some(_) => format!("/{data}"),
+                };
+                PathAndQuery::from_str(&data)
+                    .map(Some)
+                    .map_err(Error::custom)
+            }
+            None => Ok(None),
+        }
     }
 }
 

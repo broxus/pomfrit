@@ -82,7 +82,13 @@ impl MetricsExporter {
             async move {
                 Ok::<_, Infallible>(hyper::service::service_fn(move |req| {
                     // Allow only GET metrics_path
-                    if req.method() != hyper::Method::GET || req.uri() != path.as_str() {
+                    let is_metrics_path = match &path {
+                        _ if req.method() != hyper::Method::GET => false,
+                        Some(path) => req.uri() == path.as_str(),
+                        None => true,
+                    };
+
+                    if !is_metrics_path {
                         return Either::Left(futures_util::future::ready(
                             hyper::Response::builder()
                                 .status(hyper::StatusCode::NOT_FOUND)

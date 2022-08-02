@@ -10,10 +10,13 @@ pub struct Config {
     /// Default: `127.0.0.1:10000`
     pub listen_address: SocketAddr,
 
-    /// Path to the metrics.
-    /// Default: `/`
-    #[cfg_attr(feature = "serde", serde(with = "crate::utils::serde_url"))]
-    pub metrics_path: PathAndQuery,
+    /// Path to the metrics if specified. Any path will work otherwise
+    /// Default: None
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, with = "crate::utils::serde_optional_url")
+    )]
+    pub metrics_path: Option<PathAndQuery>,
 
     /// Metrics update interval in seconds. Default: 10
     pub collection_interval_sec: u64,
@@ -23,7 +26,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             listen_address: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 10000),
-            metrics_path: PathAndQuery::from_static("/"),
+            metrics_path: None,
             collection_interval_sec: 10,
         }
     }
