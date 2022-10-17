@@ -278,6 +278,11 @@ impl<'a> MetricsBuffer<'a> {
         self.buffer_guard.push_str(&metrics.to_string());
         self
     }
+
+    pub fn write_str<T: AsRef<str>>(&mut self, str: T) -> &mut Self {
+        self.buffer_guard.push_str(str.as_ref());
+        self
+    }
 }
 
 impl<'a> Drop for MetricsBuffer<'a> {
